@@ -83,7 +83,7 @@ const InsightCard = ({ insight, index }: InsightCardProps) => {
                 rel="noopener noreferrer"
                 className="text-primary hover:underline text-sm"
               >
-                Watch Campaign
+                Watch
               </a>
             </div>
           </div>

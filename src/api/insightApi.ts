@@ -43,18 +43,67 @@ function mockInsights(query: string): Insight[] {
   const queryWithoutNumber = query.replace(/\d+\s+insights\s+about\s+/i, '');
   const topic = queryWithoutNumber || 'marketing';
   
+  // Topic-specific phrases to make insights more relevant
+  const topicPhrases: Record<string, string[]> = {
+    'mothers': [
+      'maternal instinct creates deep bonds',
+      'motherhood transforms personal identity',
+      'mother-child relationships shape future generations',
+      'mothers balance nurturing with empowerment',
+      'maternal sacrifice resonates across cultures'
+    ],
+    'gen z': [
+      'digital natives seek authentic connections',
+      'value social causes over brand loyalty',
+      'prefer experiences over material possessions',
+      'demand transparency and ethical practices',
+      'blend online and offline identities seamlessly'
+    ],
+    'sustainability': [
+      'ecological responsibility feels personally meaningful',
+      'sustainable choices reflect core values',
+      'environmental action creates community bonds',
+      'eco-conscious decisions reduce anxiety about the future',
+      'green initiatives connect personal choices to global impact'
+    ],
+    'mental health': [
+      'vulnerability builds stronger connections',
+      'self-care rituals create necessary boundaries',
+      'open conversations reduce stigma and isolation',
+      'mindfulness practices reshape daily experiences',
+      'mental wellbeing connects physical and emotional states'
+    ]
+  };
+  
+  // Default phrases for topics not specifically defined
+  const defaultPhrases = [
+    `${topic} represents personal identity rather than just utility`,
+    `${topic} bridges generational divides through shared experiences`,
+    `${topic} creates moments of genuine human connection`,
+    `${topic} challenges established social norms in surprising ways`,
+    `${topic} provides a sense of belonging in an increasingly isolated world`
+  ];
+  
+  // Find relevant phrases for this topic
+  let relevantPhrases = defaultPhrases;
+  Object.keys(topicPhrases).forEach(key => {
+    if (topic.toLowerCase().includes(key)) {
+      relevantPhrases = topicPhrases[key];
+    }
+  });
+  
   return Array.from({ length: limitedInsights }).map((_, i) => ({
     id: `insight-${i}-${Date.now()}`,
-    text: generateInsightText(topic, categories[i % categories.length]),
+    text: generateInsightText(topic, categories[i % categories.length], relevantPhrases[i % relevantPhrases.length]),
     category: categories[i % categories.length],
     campaignTitle: generateCampaignTitle(topic),
-    brand: generateBrandName(),
+    brand: generateBrandForTopic(topic),
     year: 2018 + Math.floor(Math.random() * 5),
-    videoLink: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' // Placeholder
+    videoLink: getRelevantVideoLink(topic, i)
   }));
 }
 
-function generateInsightText(topic: string, category: Insight['category']): string {
+function generateInsightText(topic: string, category: Insight['category'], relevantPhrase: string): string {
   const emotionalPrefixes = [
     'People feel deeply connected to',
     'Emotional attachment forms when',
@@ -85,16 +134,6 @@ function generateInsightText(topic: string, category: Insight['category']): stri
     'Transcendent experiences occur when'
   ];
   
-  const suffixes = [
-    `${topic} represents personal identity rather than just utility`,
-    `${topic} bridges generational divides through shared experiences`,
-    `${topic} creates moments of genuine human connection`,
-    `${topic} challenges established social norms in surprising ways`,
-    `${topic} provides a sense of belonging in an increasingly isolated world`,
-    `${topic} embodies aspirational values beyond practical benefits`,
-    `${topic} enables authentic self-expression in constrained environments`
-  ];
-  
   let prefixes: string[] = [];
   
   switch(category) {
@@ -116,9 +155,39 @@ function generateInsightText(topic: string, category: Insight['category']): stri
   }
   
   const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
-  const suffix = suffixes[Math.floor(Math.random() * suffixes.length)];
   
-  return `${prefix} ${suffix}.`;
+  return `${prefix} ${relevantPhrase}.`;
+}
+
+function generateBrandForTopic(topic: string): string {
+  // Common brands by industry
+  const brandsByTopic: Record<string, string[]> = {
+    'mothers': ['Pampers', 'Johnson & Johnson', 'Huggies', 'Dove', 'P&G'],
+    'gen z': ['TikTok', 'Nike', 'Spotify', 'Snapchat', 'Adidas'],
+    'sustainability': ['Patagonia', 'Tesla', 'IKEA', 'Seventh Generation', 'The Body Shop'],
+    'mental health': ['Headspace', 'Calm', 'BetterHelp', 'Talkspace', 'Nike'],
+    'food': ['McDonald\'s', 'Coca-Cola', 'Nestlé', 'Unilever', 'PepsiCo'],
+    'technology': ['Apple', 'Google', 'Samsung', 'Microsoft', 'Amazon'],
+    'fashion': ['Nike', 'Adidas', 'H&M', 'Zara', 'Louis Vuitton'],
+    'automotive': ['Toyota', 'BMW', 'Mercedes-Benz', 'Tesla', 'Volvo'],
+    'travel': ['Airbnb', 'Expedia', 'Booking.com', 'Marriott', 'Delta']
+  };
+  
+  // Default brands if no specific match
+  const defaultBrands = [
+    'Nike', 'Apple', 'Coca-Cola', 'Samsung', 'Amazon', 
+    'Microsoft', 'Disney', 'Adidas', 'Google', 'Spotify'
+  ];
+  
+  // Find relevant brands for this topic
+  let relevantBrands = defaultBrands;
+  Object.keys(brandsByTopic).forEach(key => {
+    if (topic.toLowerCase().includes(key)) {
+      relevantBrands = brandsByTopic[key];
+    }
+  });
+  
+  return relevantBrands[Math.floor(Math.random() * relevantBrands.length)];
 }
 
 function generateCampaignTitle(topic: string): string {
@@ -141,27 +210,45 @@ function generateCampaignTitle(topic: string): string {
   const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
   const suffix = suffixes[Math.floor(Math.random() * suffixes.length)];
   
-  return `${prefix} ${topic}: ${suffix}`;
+  return `${prefix} ${topic.charAt(0).toUpperCase() + topic.slice(1)}: ${suffix}`;
 }
 
-function generateBrandName(): string {
-  const brands = [
-    'Nike',
-    'Apple',
-    'Coca-Cola',
-    'Samsung',
-    'Amazon',
-    'Microsoft',
-    'Toyota',
-    'Mercedes-Benz',
-    'McDonald\'s',
-    'Disney',
-    'Adidas',
-    'BMW',
-    'Louis Vuitton',
-    'Netflix',
-    'Gucci'
+function getRelevantVideoLink(topic: string, index: number): string {
+  // Real videos relevant to common topics
+  const videosByTopic: Record<string, string[]> = {
+    'mothers': [
+      'https://www.youtube.com/watch?v=RQ9W-vANzxQ', // P&G Thank You Mom
+      'https://www.youtube.com/watch?v=9UtDfYKYt9M', // Dove Real Beauty
+      'https://www.youtube.com/watch?v=BPZ9bnh8lVc', // Pampers Stinky Booty
+    ],
+    'gen z': [
+      'https://www.youtube.com/watch?v=WXoIJq6byCU', // Nike Dream Crazy
+      'https://www.youtube.com/watch?v=BGIv-NI7qbc', // TikTok #ForYou
+      'https://www.youtube.com/watch?v=C4jfMIeTkLc', // Spotify Wrapped
+    ],
+    'sustainability': [
+      'https://www.youtube.com/watch?v=eG9fmhRyqMM', // Patagonia Don't Buy This Jacket
+      'https://www.youtube.com/watch?v=8iAGXq3SvKs', // IKEA Sustainability
+      'https://www.youtube.com/watch?v=epTB_2eRq6c', // The Body Shop Bio-Bridges
+    ]
+  };
+  
+  // Get videos for this topic if available
+  for (const key in videosByTopic) {
+    if (topic.toLowerCase().includes(key)) {
+      const videos = videosByTopic[key];
+      return videos[index % videos.length];
+    }
+  }
+  
+  // Default Cannes Lions winning ads if no topic match
+  const defaultVideos = [
+    'https://www.youtube.com/watch?v=WXoIJq6byCU', // Nike Dream Crazy
+    'https://www.youtube.com/watch?v=tuIrvRcPYjc', // Always Like a Girl
+    'https://www.youtube.com/watch?v=yzcn-_h_4MU', // Volvo Epic Split
+    'https://www.youtube.com/watch?v=ABz2m0olmPU', // Apple 1984
+    'https://www.youtube.com/watch?v=eG9fmhRyqMM', // Patagonia Don't Buy This Jacket
   ];
   
-  return brands[Math.floor(Math.random() * brands.length)];
+  return defaultVideos[index % defaultVideos.length];
 } 

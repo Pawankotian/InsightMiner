@@ -43,8 +43,7 @@ export default function Home() {
             <span className="text-primary">Insight</span>Miner
           </h1>
           <p className="text-lg max-w-2xl mx-auto">
-            Generate creative, relatable, and emotionally-driven insights from 
-            award-winning Cannes Lions advertising campaigns.
+            AI-powered insights from award-winning campaigns.
           </p>
         </motion.div>
         
@@ -58,14 +57,14 @@ export default function Home() {
         
         {hasSearched && !isLoading && !error && insights.length === 0 && (
           <div className="mt-8 text-center">
-            <p>No insights found for "{searchQuery}". Try a different query.</p>
+            <p>No insights found. Try a different query.</p>
           </div>
         )}
         
         {insights.length > 0 && (
           <div className="mt-8 w-full">
             <h2 className="text-2xl font-semibold mb-4">
-              Insights for "{searchQuery}"
+              {searchQuery}
             </h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -100,7 +99,7 @@ export default function Home() {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3, duration: 0.5 }}
           >
-            <h2 className="text-xl font-semibold mb-4">Example Searches</h2>
+            <h2 className="text-xl font-semibold mb-4">Try these</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {[
                 "5 insights about mothers",
