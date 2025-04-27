@@ -1,4 +1,5 @@
-import axios from 'axios';
+// Remove the axios import since we're not actually using it
+// import axios from 'axios';
 
 // Note: This is a frontend implementation that would typically use a backend API
 // In a production environment, you would move this to a secure backend service

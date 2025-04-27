@@ -27,6 +27,21 @@ const categoryColors = {
 const InsightCard = ({ insight, index }: InsightCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   
+  // Check if insight is valid - render a placeholder if not
+  if (!insight || !insight.text) {
+    console.error("Invalid insight data:", insight);
+    return (
+      <div className="card p-4 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-100">
+        Error loading insight data
+      </div>
+    );
+  }
+
+  // Ensure category is valid, default to 'emotional' if not
+  const safeCategory = insight.category && categoryColors[insight.category] 
+    ? insight.category 
+    : 'emotional';
+  
   return (
     <motion.div
       className="card overflow-hidden"
@@ -36,8 +51,8 @@ const InsightCard = ({ insight, index }: InsightCardProps) => {
     >
       <div className="flex flex-col">
         <div className="flex justify-between items-start mb-3">
-          <span className={`text-xs font-medium px-2 py-1 rounded-full ${categoryColors[insight.category]}`}>
-            {insight.category}
+          <span className={`text-xs font-medium px-2 py-1 rounded-full ${categoryColors[safeCategory]}`}>
+            {safeCategory}
           </span>
           <button
             onClick={() => setIsExpanded(!isExpanded)}
@@ -69,16 +84,16 @@ const InsightCard = ({ insight, index }: InsightCardProps) => {
         >
           <div className="pt-3 border-t border-gray-200 dark:border-gray-700 mt-2">
             <p className="text-sm font-medium">
-              {insight.campaignTitle}
+              {insight.campaignTitle || 'Campaign Title'}
             </p>
             <div className="flex justify-between items-center mt-2">
               <div>
                 <p className="text-xs text-gray-600 dark:text-gray-400">
-                  {insight.brand}, {insight.year}
+                  {insight.brand || 'Brand'}, {insight.year || '2023'}
                 </p>
               </div>
               <a 
-                href={insight.videoLink} 
+                href={insight.videoLink || '#'} 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="text-primary hover:underline text-sm"
