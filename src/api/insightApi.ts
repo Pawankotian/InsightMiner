@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { Insight } from '@/components/InsightCard';
+import { searchCannesCampaigns } from '@/utils/webSearchUtils';
 
 // Replace with your actual Replit backend URL when deployed
 const API_BASE_URL = 'https://insightminer-backend.example.repl.co/api';
@@ -17,12 +18,22 @@ export async function getInsights(query: string): Promise<InsightsResponse> {
     // return response.data;
     
     // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Extract topic from query
+    const queryWithoutNumber = query.replace(/\d+\s+insights\s+about\s+/i, '');
+    const topic = queryWithoutNumber || 'marketing';
+    
+    // Use web search to find real campaigns
+    const campaigns = await searchCannesCampaigns(topic);
+    
+    // Create insights from the campaigns
+    const insights = await generateInsightsFromCampaigns(campaigns, topic, query);
     
     // Return mock data
     return {
       query,
-      insights: mockInsights(query)
+      insights: insights
     };
   } catch (error) {
     console.error('Error fetching insights:', error);
@@ -30,80 +41,51 @@ export async function getInsights(query: string): Promise<InsightsResponse> {
   }
 }
 
-// Mock data generator function - replace with actual API in production
-function mockInsights(query: string): Insight[] {
+async function generateInsightsFromCampaigns(
+  campaigns: Array<{
+    title: string;
+    brand: string;
+    year: string | number;
+    description: string;
+    videoLink?: string;
+  }>,
+  topic: string,
+  query: string
+): Promise<Insight[]> {
   const categories: Insight['category'][] = ['emotional', 'human truths', 'behavioral', 'cultural', 'religious'];
   
   // Parse the query to determine how many insights to generate
   const numInsightsMatch = query.match(/(\d+)\s+insights/i);
   const numInsights = numInsightsMatch ? parseInt(numInsightsMatch[1]) : 5;
-  const limitedInsights = Math.min(numInsights, 10); // Limit to max 10 insights
+  const limitedInsights = Math.min(numInsights, campaigns.length); // Limit to available campaigns
   
-  // Extract topic from query
-  const queryWithoutNumber = query.replace(/\d+\s+insights\s+about\s+/i, '');
-  const topic = queryWithoutNumber || 'marketing';
-  
-  // Topic-specific phrases to make insights more relevant
-  const topicPhrases: Record<string, string[]> = {
-    'mothers': [
-      'maternal instinct creates deep bonds',
-      'motherhood transforms personal identity',
-      'mother-child relationships shape future generations',
-      'mothers balance nurturing with empowerment',
-      'maternal sacrifice resonates across cultures'
-    ],
-    'gen z': [
-      'digital natives seek authentic connections',
-      'value social causes over brand loyalty',
-      'prefer experiences over material possessions',
-      'demand transparency and ethical practices',
-      'blend online and offline identities seamlessly'
-    ],
-    'sustainability': [
-      'ecological responsibility feels personally meaningful',
-      'sustainable choices reflect core values',
-      'environmental action creates community bonds',
-      'eco-conscious decisions reduce anxiety about the future',
-      'green initiatives connect personal choices to global impact'
-    ],
-    'mental health': [
-      'vulnerability builds stronger connections',
-      'self-care rituals create necessary boundaries',
-      'open conversations reduce stigma and isolation',
-      'mindfulness practices reshape daily experiences',
-      'mental wellbeing connects physical and emotional states'
-    ]
-  };
-  
-  // Default phrases for topics not specifically defined
-  const defaultPhrases = [
-    `${topic} represents personal identity rather than just utility`,
-    `${topic} bridges generational divides through shared experiences`,
-    `${topic} creates moments of genuine human connection`,
-    `${topic} challenges established social norms in surprising ways`,
-    `${topic} provides a sense of belonging in an increasingly isolated world`
-  ];
-  
-  // Find relevant phrases for this topic
-  let relevantPhrases = defaultPhrases;
-  Object.keys(topicPhrases).forEach(key => {
-    if (topic.toLowerCase().includes(key)) {
-      relevantPhrases = topicPhrases[key];
-    }
+  // Map campaigns to insights
+  return Array.from({ length: limitedInsights }).map((_, i) => {
+    const campaign = campaigns[i % campaigns.length];
+    const category = categories[i % categories.length];
+    
+    return {
+      id: `insight-${i}-${Date.now()}`,
+      text: generateInsightTextFromCampaign(campaign, category, topic),
+      category: category,
+      campaignTitle: campaign.title,
+      brand: campaign.brand,
+      year: typeof campaign.year === 'string' ? parseInt(campaign.year) : campaign.year,
+      videoLink: campaign.videoLink || 'https://www.youtube.com/results?search_query=cannes+lions+' + encodeURIComponent(topic),
+    };
   });
-  
-  return Array.from({ length: limitedInsights }).map((_, i) => ({
-    id: `insight-${i}-${Date.now()}`,
-    text: generateInsightText(topic, categories[i % categories.length], relevantPhrases[i % relevantPhrases.length]),
-    category: categories[i % categories.length],
-    campaignTitle: generateCampaignTitle(topic),
-    brand: generateBrandForTopic(topic),
-    year: 2018 + Math.floor(Math.random() * 5),
-    videoLink: getRelevantVideoLink(topic, i)
-  }));
 }
 
-function generateInsightText(topic: string, category: Insight['category'], relevantPhrase: string): string {
+function generateInsightTextFromCampaign(
+  campaign: {
+    title: string;
+    brand: string;
+    year: string | number;
+    description: string;
+  }, 
+  category: Insight['category'],
+  topic: string
+): string {
   const emotionalPrefixes = [
     'People feel deeply connected to',
     'Emotional attachment forms when',
@@ -156,9 +138,13 @@ function generateInsightText(topic: string, category: Insight['category'], relev
   
   const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
   
-  return `${prefix} ${relevantPhrase}.`;
+  // Extract key phrases from campaign description
+  const keyPhrase = campaign.description.split('.')[0];
+  
+  return `${prefix} ${keyPhrase.toLowerCase()}.`;
 }
 
+// These functions are no longer used, but kept for reference
 function generateBrandForTopic(topic: string): string {
   // Common brands by industry
   const brandsByTopic: Record<string, string[]> = {
@@ -211,44 +197,4 @@ function generateCampaignTitle(topic: string): string {
   const suffix = suffixes[Math.floor(Math.random() * suffixes.length)];
   
   return `${prefix} ${topic.charAt(0).toUpperCase() + topic.slice(1)}: ${suffix}`;
-}
-
-function getRelevantVideoLink(topic: string, index: number): string {
-  // Real videos relevant to common topics
-  const videosByTopic: Record<string, string[]> = {
-    'mothers': [
-      'https://www.youtube.com/watch?v=RQ9W-vANzxQ', // P&G Thank You Mom
-      'https://www.youtube.com/watch?v=9UtDfYKYt9M', // Dove Real Beauty
-      'https://www.youtube.com/watch?v=BPZ9bnh8lVc', // Pampers Stinky Booty
-    ],
-    'gen z': [
-      'https://www.youtube.com/watch?v=WXoIJq6byCU', // Nike Dream Crazy
-      'https://www.youtube.com/watch?v=BGIv-NI7qbc', // TikTok #ForYou
-      'https://www.youtube.com/watch?v=C4jfMIeTkLc', // Spotify Wrapped
-    ],
-    'sustainability': [
-      'https://www.youtube.com/watch?v=eG9fmhRyqMM', // Patagonia Don't Buy This Jacket
-      'https://www.youtube.com/watch?v=8iAGXq3SvKs', // IKEA Sustainability
-      'https://www.youtube.com/watch?v=epTB_2eRq6c', // The Body Shop Bio-Bridges
-    ]
-  };
-  
-  // Get videos for this topic if available
-  for (const key in videosByTopic) {
-    if (topic.toLowerCase().includes(key)) {
-      const videos = videosByTopic[key];
-      return videos[index % videos.length];
-    }
-  }
-  
-  // Default Cannes Lions winning ads if no topic match
-  const defaultVideos = [
-    'https://www.youtube.com/watch?v=WXoIJq6byCU', // Nike Dream Crazy
-    'https://www.youtube.com/watch?v=tuIrvRcPYjc', // Always Like a Girl
-    'https://www.youtube.com/watch?v=yzcn-_h_4MU', // Volvo Epic Split
-    'https://www.youtube.com/watch?v=ABz2m0olmPU', // Apple 1984
-    'https://www.youtube.com/watch?v=eG9fmhRyqMM', // Patagonia Don't Buy This Jacket
-  ];
-  
-  return defaultVideos[index % defaultVideos.length];
 } 
